@@ -1,0 +1,183 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ISORhythm WebChuck</title><script type="text/javascript" src="https://ccrma.stanford.edu/~cc/220a/webchuck220a/js/ace.js" charset="utf-8"></script><script type="text/javascript" src="https://ccrma.stanford.edu/~cc/220a/webchuck220a/js/editor.js"></script><link rel="stylesheet" href="https://ccrma.stanford.edu/~cc/220a/webchuck220a/css/editor.css"><style>body {background-color: #DEF; font-family: Arial, Helvetica, sans-serif;}
+    button {padding: 10px 20px; border: 1px solid #333; border-radius: 5px; background-color: bisque; color: #333; cursor: pointer;}
+    button:hover {background-color: #333; color: bisque; transition: 300ms;}</style></head><body><h1>HW2: Auditory Streaming Illusion Nicolas Zezza  </h1><h2>Initially, I wanted to create a trumpet but ended up messing with parameters resulting in a wind, hurricane, train-like sound. From this I was inspired to think of an accelerating train and what better melodies to model and be inspired by than pieces such as Johann Strauss' Railway Pleasure Waltzes</h2><p></p><button id="play">Play</button> <button id="stop">Stop</button><br><br><div id="editor" class="ace_editor ace-chuck"></div><script type="module">import { Chuck } from 'https://cdn.jsdelivr.net/npm/webchuck/+esm';
+
+        let firstTime = true;
+        let CODE = ""
+
+        // Play
+
+        document.getElementById('play').addEventListener('click', async () => {
+            // Initialize default ChucK object, if not already initialized
+            window.theChuck ??= await Chuck.init([
+                { 
+                    serverFilename: "https://ccrma.stanford.edu/courses/220a-fall-2023/static/webchuck/ide/isoRhythmClass.ck", 
+                    virtualFilename: "isoRhythmClass.ck" 
+                }
+            ]);
+
+            // First time starting ChucK
+            if (firstTime) {
+                theChuck.runFile("isoRhythmClass.ck");
+                firstTime = false;
+            }
+
+            // Run ChucK code
+            theChuck.runCode(editor.getValue());
+        });
+
+        // Stop
+        document.getElementById('stop').addEventListener('click', async () => {
+            theChuck.removeLastCode();
+        });
+
+        // Submitted Code
+        const code = `
+// Inspiration taken from above example: Perry R. Cook, June 2021, Heavy Metal Trumpet Preset 
+private class Trumpet{
+  HevyMetl t => NRev r => dac;
+  0.06 => r.mix; // reverb
+  [1,6,6,1] @=> int waveForms[];
+  [99,85,74,99] @=> int opGains[]; // [93,75,54,81] from patch
+  [1.0,1.0,2.9,1.0] @=> float ratios[];
+  [15,14,15,15] @=> int attacks[]; // [18,14,15,15] from patch
+  [31,20,26,14] @=> int decays[];  // [31,31,26,31] from patch
+  [15,10,13,15] @=> int sustains[]; // [15,15,13,15] from patch
+  [10,10,10,10] @=> int releases[]; // [8,8,8,8] from patch
+  // ops
+  for( int op; op < 4; op++ )
+  {
+      t.opWave( op, waveForms[op] );  // sine waves all
+      t.opGain( op, t.getFMTableGain(opGains[op]) );
+      t.opADSR( op, t.getFMTableTime(attacks[op]),
+                    t.getFMTableTime(decays[op]),
+                    t.getFMTableSusLevel(sustains[op]),
+                    t.getFMTableTime(releases[op]) );
+      t.opRatio( op, ratios[op] );
+  }
+  // t.setOpGain(1,0.0);
+  t.op4Feedback(0.5);
+  0.005 => t.lfoDepth;
+  
+}
+
+
+private class IsoRhythm {
+// array to hold midi pitches (key numbers) 
+// these will be converted into the carrier frequencies
+  [72, 72, 72, 72, 72, 72, 72, 71, 70, 74, 74, 74, 70, 74, 70, 74, 73] @=> int keyNum[];
+  
+// how many pitches are in the array
+  keyNum.size() => int nPitches;
+  3 => int nInsts;
+  800::ms => dur x;
+
+  FM fm[nInsts];
+  HevyMetl t @=> fm[0];
+  HevyMetl t1 @=> fm[1];
+  HevyMetl t2 @=> fm[2];
+  
+  [1,6,6,1] @=> int waveForms[];
+  [99,85,74,99] @=> int opGains[]; // [93,75,54,81] from patch
+  [1.0,1.0,2.9,1.0] @=> float ratios[];
+  [15,14,15,15] @=> int attacks[]; // [18,14,15,15] from patch
+  [31,20,26,14] @=> int decays[];  // [31,31,26,31] from patch
+  [15,10,13,15] @=> int sustains[]; // [15,15,13,15] from patch
+  [10,10,10,10] @=> int releases[]; // [8,8,8,8] from patch
+  
+  
+  // quite blocky inefficient code to manipulate each fm to gain train effect 
+   for( int op; op < 4; op++ )
+  {
+      t.opWave( op, waveForms[op] );  // sine waves all
+      t.opGain( op, t.getFMTableGain(opGains[op]) );
+      t.opADSR( op, t.getFMTableTime(attacks[op]),
+                    t.getFMTableTime(decays[op]),
+                    t.getFMTableSusLevel(sustains[op]),
+                    t.getFMTableTime(releases[op]) );
+      t.opRatio( op, ratios[op] );
+  }
+  
+     for( int op; op < 4; op++ )
+  {
+      t1.opWave( op, waveForms[op] );  // sine waves all
+      t1.opGain( op, t1.getFMTableGain(opGains[op]) );
+      t1.opADSR( op, t1.getFMTableTime(attacks[op]),
+                    t1.getFMTableTime(decays[op]),
+                    t1.getFMTableSusLevel(sustains[op]),
+                    t1.getFMTableTime(releases[op]) );
+      t1.opRatio( op, ratios[op] );
+  }
+     for( int op; op < 4; op++ )
+  {
+      t2.opWave( op, waveForms[op] );  // sine waves all
+      t2.opGain( op, t2.getFMTableGain(opGains[op]) );
+      t2.opADSR( op, t2.getFMTableTime(attacks[op]),
+                    t2.getFMTableTime(decays[op]),
+                    t2.getFMTableSusLevel(sustains[op]),
+                    t2.getFMTableTime(releases[op]) );
+      t2.opRatio( op, ratios[op] );
+  }
+
+  fm[0] => Envelope env => NRev rev => Echo echo => dac;
+  fm[1] => Envelope env1 => NRev rev1 => Echo echo1 => dac;
+  fm[2] => Envelope env2 => NRev rev2 => Echo echo2 => dac;
+  0.06 => rev.mix; // reverb
+  0.05 => rev1.mix;
+  0.04 => rev2.mix; 
+
+  Pan2 stereo[nInsts];
+  for (0 => int i; i < nInsts; i++) fm[i] => stereo[i] => dac;
+  100::ms => dur duration;
+ 
+
+  fun void play(dur howLong, float accel, dur minInterOnsetInterval) {
+// initial interOnsetInterval (inverse of tempo)
+   800::ms => dur x;
+// index for which pitch is next
+    0 => int p;
+// index for which instrument is next                         
+    0 => int i;
+    now => time beg;
+    beg + howLong => time end;
+    while (now < end) {
+      Std.mtof(keyNum[p]+12.0) => fm[i].freq;
+      stereo[i].pan( (i%nInsts - 1) );
+      fm[i].noteOn(1.0);
+      env.keyOn();
+      env1.keyOn();
+      env2.keyOn();
+      duration => now;
+      fm[i].noteOff(1.0);
+      env.keyOff();
+      env1.keyOff();
+      env2.keyOff();
+// increment pitch and instrument
+      p++;
+      i++;
+// cycle pitches through full array
+      nPitches %=> p;
+// cycle instruments through full array
+      nInsts %=> i;
+// advance time by interOnsetInterval and calculate the next interval
+      x => now;
+// accelerate
+      if (x > minInterOnsetInterval) 
+        x * accel => x;
+      else
+// can't go faster than minInterOnsetInterval 
+        minInterOnsetInterval => x;
+    }
+  }
+  <<< "isoRhythmClass defined" >>>;
+} // end of isoRhythm class definition
+
+IsoRhythm iso; // instantiate an IsoRhythm object
+spork ~ iso.play(55::second, 0.98, 10::ms);
+//500::ms => now;
+//spork ~ iso.play(55::second, 0.98, 10::ms);
+60::second => now; `;
+
+        // Set Chuck Code
+        const editor = newChuckEditor('editor');
+        editor.setValue(code, 1);</script></body></html>
