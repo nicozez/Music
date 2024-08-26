@@ -1,7 +1,7 @@
 
 import tkinter as tk
 from tkinter import ttk
-import numpy as np 
+import numpy as np
 import pyaudio
 
 # Function to generate and play sound
